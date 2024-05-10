@@ -36,7 +36,11 @@ async function run() {
         res.send(result);
       });
 
-
+    app.get('/blogs', async (req, res) => {
+        const cursor = blogCollection.find();
+        const result = await cursor.toArray();
+        res.send(result)
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
