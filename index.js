@@ -53,6 +53,24 @@ async function run() {
         res.send(result)
       })
 
+      app.put('/blog/:id', async(req,res)=>{
+        const id=req.params.id;
+        const filter={_id: new ObjectId(id)};
+        const options = { upsert: true };
+        const updateBlog=req.body;
+        const blog={
+          $set:{
+            title: updateBlog.title,
+            longdescription: updateBlog.longdescription,
+            photo: updateBlog.photo,
+            email: updateBlog.email,
+            description: updateBlog.description,
+          }
+        }
+        const result=await blogCollection.updateOne(filter,blog,options);
+        res.send(result)
+      })
+
       app.get('/comments', async(req,res)=>{
         const cursor=commentCollection.find();
         const result=await cursor.toArray();
