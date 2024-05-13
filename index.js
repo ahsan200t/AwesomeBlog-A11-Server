@@ -1,13 +1,24 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const jwt=require("jsonwebtoken");
+const cookieParser=require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
-
 const port = process.env.PORT || 5000;
 
+const corsOptions={
+  origin:[
+    'http://localhost:5173',
+    'http://localhost:5174'
+
+  ],
+ credentials:true,
+ optionSuccessStatus:200,
+}
+
 // middleWere
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 
@@ -31,6 +42,21 @@ async function run() {
     const blogCollection = client.db('blogDB').collection('blog');
     const commentCollection = client.db('blogDB').collection('comment')
     const wishCollection = client.db('blogDB').collection('wishlist')
+     
+    // jwt generate
+     app.post('/jwt', async(req,res)=>{
+      const user=req.body;
+      const token=jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "7d"
+      })
+      // res.send(token)
+      res.cookie('token', token, {
+        httpOnly:true,
+        secure: process.env.NODE_ENV==='production',
+        sameSite:process.env.NODE_ENV === 'production' ? 'none': 'strict'
+      }).send({success: true})
+     })
+
 
     // Post blog
     app.post('/blogs', async (req, res) => {
@@ -58,6 +84,13 @@ async function run() {
       const email = req.params.email;
       const query = { email };
       const result = await wishCollection.find(query).toArray();
+      res.send(result)
+    })
+    // Wish List Delete
+    app.delete('/wish/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id) };
+      const result = await wishCollection.deleteOne(query)
       res.send(result)
     })
     // Update Blog's put
