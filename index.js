@@ -10,6 +10,7 @@ const port = process.env.PORT || 5000;
 const corsOptions = {
   origin: [
     'http://localhost:5173',
+    'http://localhost:5000',
     'http://localhost:5174',
     'https://assignment-11-de1f3.web.app',
     'https://assignment-11-de1f3.firebaseapp.com',
@@ -24,6 +25,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser())
+
 
 // verify jwt middleware
 
@@ -95,7 +97,7 @@ async function run() {
     app.post('/blogs', async (req, res) => {
       const newBlog = req.body;
       const result = await blogCollection.insertOne(newBlog);
-      res.send(result,allResult);
+      res.send(result);
     });
 
     // Post Comment
@@ -151,17 +153,39 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result)
     })
-
-    // All Blog Page's Get
+    // homepage blog get
     app.get('/blogs', async (req, res) => {
-      // const filter=req.query.filter;
-      // let query={}
-      // if(filter) query={category:filter}
-      // const allResult=await blogCollection.find(query)
       const cursor = blogCollection.find();
       const result = await cursor.toArray();
       res.send(result)
     })
+
+    // All Blog Page's Get
+    app.get('/all-blogs', async (req, res) => {
+      const filter = req.query.filter;
+      const search = req.query.search
+      let query = {
+        title: { $regex: search, $options: 'i' }
+      }
+      if (filter) { query = { category: filter } }
+      const cursor = blogCollection.find(query)
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+    // Get all blog data count from db
+    app.get('/blog-count', async (req, res) => {
+      const filter = req.query.filter
+      const search = req.query.search
+      let query = {
+        title: { $regex: search, $options: 'i' },
+      }
+      if (filter) {query.category = filter}
+      const count = await blogCollection.countDocuments(query)
+
+      res.send({ count })
+    })
+
 
     // Blog Details Get
     app.get('/single-blogs/:id', async (req, res) => {
