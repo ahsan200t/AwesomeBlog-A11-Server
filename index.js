@@ -66,6 +66,7 @@ async function run() {
     // await client.connect();
     const blogCollection = client.db('blogDB').collection('blog');
     const commentCollection = client.db('blogDB').collection('comment')
+    const userCollection = client.db('blogDB').collection('users')
     const wishCollection = client.db('blogDB').collection('wishlist')
 
     // jwt generate
@@ -92,6 +93,42 @@ async function run() {
       }).send({ success: true })
     })
 
+    // user api
+    app.patch('/users/admin/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const updatedDoc = {
+        $set: {
+          role: 'admin'
+        }
+      }
+      const result= await userCollection.updateOne(filter,updatedDoc)
+      res.send(result)
+    })
+
+    app.delete('/users/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.findOne(query);
+      res.send(result)
+    })
+
+    app.get('/users', async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result)
+    })
+
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email }
+      const existingUser = await userCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ massage: "User Already Exist", insertedId: null })
+      }
+      const result = await userCollection.insertOne(user);
+      res.send(result)
+    })
+
 
     // Post blog
     app.post('/blogs', async (req, res) => {
@@ -103,6 +140,7 @@ async function run() {
     // Post Comment
     app.post('/comments', async (req, res) => {
       const newComment = req.body;
+
       const result = await commentCollection.insertOne(newComment);
       res.send(result)
     })
@@ -159,6 +197,12 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result)
     })
+    // Featured Section blog get
+    app.get('/featured-blogs', async (req, res) => {
+      const cursor = blogCollection.find();
+      const result = await cursor.toArray();
+      res.send(result)
+    })
 
     // All Blog Page's Get
     app.get('/all-blogs', async (req, res) => {
@@ -180,7 +224,7 @@ async function run() {
       let query = {
         title: { $regex: search, $options: 'i' },
       }
-      if (filter) {query.category = filter}
+      if (filter) { query.category = filter }
       const count = await blogCollection.countDocuments(query)
 
       res.send({ count })
